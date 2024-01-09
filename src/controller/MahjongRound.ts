@@ -5,11 +5,12 @@
 import {calculateHandValue, MANGAN_BASE_POINT} from "./Points";
 import {
 	ActionType,
-	BackendToFrontendRound,
-	FrontendToBackendRound,
-	getNextWind,
+	ConcludedRound,
 	getEmptyScoreDelta,
+	getNextWind,
+	getStartingScore,
 	Hand,
+	NewRound,
 	NUM_PLAYERS,
 	Transaction,
 	Wind,
@@ -26,7 +27,7 @@ export class JapaneseRound {
 	public readonly transactions: Transaction[];
 	private readonly dealerIndex: number;
 
-	constructor(newRound: BackendToFrontendRound) {
+	constructor(newRound: NewRound) {
 		/**
 		 * Represents a Round in a Riichi Game.
 		 * @param wind the wind of the current. Can be East or South.
@@ -158,7 +159,8 @@ export class JapaneseRound {
 		});
 	}
 
-	public addRiichi(riichiPlayerIndex: number) { // deprecated
+	public addRiichi(riichiPlayerIndex: number) {
+		// deprecated
 		this.riichis.push(riichiPlayerIndex);
 	}
 
@@ -178,7 +180,7 @@ export class JapaneseRound {
 		}
 		return this.riichiSticks + this.riichis.length;
 	}
-	public concludeGame(): FrontendToBackendRound {
+	public concludeGame(): ConcludedRound {
 		return {
 			roundWind: this.roundWind,
 			roundNumber: this.roundNumber,
@@ -206,7 +208,7 @@ function reduceScoreDeltas(transactions: Transaction[]): number[] {
 	);
 }
 
-export function generateOverallScoreDelta(concludedGame: FrontendToBackendRound) {
+export function generateOverallScoreDelta(concludedGame: ConcludedRound) {
 	const riichiDeltas = getEmptyScoreDelta();
 	for (const id of concludedGame.riichis) {
 		riichiDeltas[id] -= 1000;
@@ -218,27 +220,54 @@ export function generateOverallScoreDelta(concludedGame: FrontendToBackendRound)
 	return addScoreDeltas(reduceScoreDeltas(concludedGame.transactions), riichiDeltas);
 }
 
-export function generateNextRound(concludedGame: FrontendToBackendRound): BackendToFrontendRound {
+export function generateNextRound(concludedRound: ConcludedRound): NewRound {
 	const newHonbaCount = getNewHonbaCount(
-		concludedGame.roundNumber - 1,
-		concludedGame.transactions,
-		concludedGame.honba
+		concludedRound.roundNumber - 1,
+		concludedRound.transactions,
+		concludedRound.honba
 	);
-	if (dealershipRetains(concludedGame.transactions, concludedGame.roundNumber - 1)) {
+	if (dealershipRetains(concludedRound.transactions, concludedRound.roundNumber - 1)) {
 		return {
 			honba: newHonbaCount,
-			roundNumber: concludedGame.roundNumber,
-			roundWind: concludedGame.roundWind,
-			startingRiichiSticks: concludedGame.endingRiichiSticks,
+			roundNumber: concludedRound.roundNumber,
+			roundWind: concludedRound.roundWind,
+			startingRiichiSticks: concludedRound.endingRiichiSticks,
 		};
 	}
 	return {
 		honba: newHonbaCount,
-		roundNumber: concludedGame.roundNumber === NUM_PLAYERS ? 1 : concludedGame.roundNumber + 1,
+		roundNumber: concludedRound.roundNumber === NUM_PLAYERS ? 1 : concludedRound.roundNumber + 1,
 		roundWind:
-			concludedGame.roundNumber === NUM_PLAYERS
-				? getNextWind(concludedGame.roundWind.valueOf())
-				: concludedGame.roundWind,
-		startingRiichiSticks: concludedGame.endingRiichiSticks,
+			concludedRound.roundNumber === NUM_PLAYERS
+				? getNextWind(concludedRound.roundWind.valueOf())
+				: concludedRound.roundWind,
+		startingRiichiSticks: concludedRound.endingRiichiSticks,
 	};
+}
+
+export function isGameEnd(newRound: NewRound, concludedRounds: ConcludedRound[]): boolean {
+	if (newRound.roundWind === Wind.NORTH) {
+		// ends at north regardless of what happens
+		return true;
+	}
+	const totalScore = concludedRounds.reduce<number[]>(
+		(result, current) => addScoreDeltas(result, generateOverallScoreDelta(current)),
+		getStartingScore()
+	);
+	let exceedsHanten = false;
+	for (const score of totalScore) {
+		if (score < 0) {
+			return true;
+		}
+		if (score >= 30000) {
+			exceedsHanten = true;
+		}
+	}
+	if (!exceedsHanten) {
+		return false;
+	}
+	if (newRound.roundWind === Wind.EAST || newRound.roundWind === Wind.SOUTH) {
+		return false;
+	}
+	return true; // west, and score does not exceeds 30k
 }
