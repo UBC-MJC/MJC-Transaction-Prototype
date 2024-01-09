@@ -9,12 +9,17 @@ export function getEmptyScoreDelta(): number[] {
 	return Array(NUM_PLAYERS).fill(0);
 }
 
+export function getStartingScore(): number[] {
+	return Array(NUM_PLAYERS).fill(STARTING_POINT);
+}
+
 const windOrder = [Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH];
 export const getNextWind = (index: number): Wind => {
 	return windOrder[(index % NUM_PLAYERS) + 1];
 };
 
 export const NUM_PLAYERS = 4;
+export const STARTING_POINT = 25000;
 
 export enum ActionType {
 	RON,
@@ -36,7 +41,7 @@ export interface Transaction {
 	scoreDeltas: number[];
 }
 
-export interface FrontendToBackendRound {
+export interface ConcludedRound {
 	/**
 	 * The frontend sends the backend this after the transaction.
 	 * @param roundWind The wind of the completed round.
@@ -55,7 +60,7 @@ export interface FrontendToBackendRound {
 	transactions: Transaction[];
 }
 
-export interface BackendToFrontendRound {
+export interface NewRound {
 	roundWind: Wind;
 	roundNumber: number;
 	honba: number;
