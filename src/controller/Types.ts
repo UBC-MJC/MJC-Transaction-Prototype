@@ -19,7 +19,6 @@ export const NUM_PLAYERS = 4;
 export enum ActionType {
 	RON,
 	TSUMO,
-	CHOMBO,
 	TENPAI,
 	DEAL_IN_PAO,
 	SELF_DRAW_PAO,

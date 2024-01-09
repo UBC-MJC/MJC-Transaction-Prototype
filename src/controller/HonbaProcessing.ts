@@ -86,7 +86,6 @@ export function addHonba(transaction: Transaction, honbaCount: number) {
 		newTransaction.scoreDeltas[index] = transaction.scoreDeltas[index];
 	}
 	switch (newTransaction.actionType) {
-		case ActionType.CHOMBO:
 		case ActionType.NAGASHI_MANGAN:
 		case ActionType.TENPAI:
 			break;
@@ -136,9 +135,6 @@ export function dealershipRetains(transactions: Transaction[], dealerIndex: numb
 		) {
 			return true;
 		}
-		if (transaction.actionType === ActionType.CHOMBO) {
-			return true;
-		}
 		if (transaction.actionType === ActionType.NAGASHI_MANGAN) {
 			return true;
 		}
@@ -155,9 +151,6 @@ export function getNewHonbaCount(dealerIndex: number, transactions: Transaction[
 			transaction.scoreDeltas[dealerIndex] > 0
 		) {
 			return honba + 1;
-		}
-		if (transaction.actionType === ActionType.CHOMBO) {
-			return honba;
 		}
 	}
 	return 0;

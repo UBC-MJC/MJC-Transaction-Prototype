@@ -96,20 +96,6 @@ export class JapaneseRound {
 		return result;
 	}
 
-	public addChombo(chomboPlayerIndex: number) {
-		const scoreDeltas = getEmptyScoreDelta();
-		for (let i = 0; i < NUM_PLAYERS; i++) {
-			if (i !== chomboPlayerIndex) {
-				scoreDeltas[i] = 2 * MANGAN_BASE_POINT;
-				scoreDeltas[chomboPlayerIndex] -= 2 * MANGAN_BASE_POINT;
-			}
-		}
-		this.transactions.push({
-			actionType: ActionType.CHOMBO,
-			scoreDeltas: scoreDeltas,
-		});
-	}
-
 	public addNagashiMangan(winnerIndex: number) {
 		const scoreDeltas = getEmptyScoreDelta();
 		const isDealer = winnerIndex === this.dealerIndex;
