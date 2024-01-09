@@ -158,8 +158,12 @@ export class JapaneseRound {
 		});
 	}
 
-	public addRiichi(riichiPlayerIndex: number) {
+	public addRiichi(riichiPlayerIndex: number) { // deprecated
 		this.riichis.push(riichiPlayerIndex);
+	}
+
+	public setRiichis(riichiPlayerIndexes: number[]) {
+		this.riichis = riichiPlayerIndexes;
 	}
 
 	private getFinalRiichiSticks() {
