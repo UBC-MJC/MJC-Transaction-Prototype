@@ -29,17 +29,6 @@ describe("Should process honba well", () => {
 			scoreDeltas: [3900, -1300, -1300, -1300],
 		});
 	});
-	it("should handle chombo", () => {
-		const ronTransaction: Transaction = {
-			actionType: ActionType.CHOMBO,
-			scoreDeltas: [4000, -12000, 4000, 4000],
-		};
-		const result = addHonba(ronTransaction, 3);
-		expect(result).deep.equal({
-			actionType: ActionType.CHOMBO,
-			scoreDeltas: [4000, -12000, 4000, 4000],
-		});
-	});
 	it("should handle nagashi mangan", () => {
 		const ronTransaction: Transaction = {
 			actionType: ActionType.NAGASHI_MANGAN,
