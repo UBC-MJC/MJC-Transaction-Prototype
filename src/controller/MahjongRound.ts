@@ -269,5 +269,5 @@ export function isGameEnd(newRound: NewRound, concludedRounds: ConcludedRound[])
 	if (newRound.roundWind === Wind.EAST || newRound.roundWind === Wind.SOUTH) {
 		return false;
 	}
-	return true; // west, and score does not exceeds 30k
+	return true; // west, and one person's score exceeds 30k
 }
