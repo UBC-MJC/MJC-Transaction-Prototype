@@ -337,6 +337,37 @@ describe("should calculate points correctly", () => {
 			startingRiichiSticks: 0,
 		});
 	});
+	it("should handle draw with one tenpai dealer", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.setTenpais([0]);
+		const endingResult = round.concludeGame();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.TENPAI,
+					scoreDeltas: [3000, -1000, -1000, -1000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([3000, -1000, -1000, -1000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
 	it("should handle draw with one tenpai by non-dealer", () => {
 		const round = new JapaneseRound({
 			roundWind: Wind.EAST,
