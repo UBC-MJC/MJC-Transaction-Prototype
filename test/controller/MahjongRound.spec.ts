@@ -2,7 +2,7 @@ import {describe} from "mocha";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 import {ActionType, Wind} from "../../src/controller/Types";
-import {generateNextRound, generateOverallScoreDelta, JapaneseRound} from "../../src/controller/MahjongRound";
+import {generateNextRound, generateOverallScoreDelta, isGameEnd, JapaneseRound} from "../../src/controller/MahjongRound";
 
 use(chaiAsPromised);
 
@@ -82,8 +82,7 @@ describe("should calculate points correctly", () => {
 		});
 		const hand = {fu: 30, han: 2};
 		round.addRon(0, 1, hand);
-		round.addRiichi(0);
-		round.addRiichi(1);
+		round.setRiichis([0, 1]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -159,9 +158,7 @@ describe("should calculate points correctly", () => {
 		round.addRon(2, 3, hand1);
 		const hand2 = {fu: 30, han: 2};
 		round.addRon(1, 3, hand2);
-		round.addRiichi(1);
-		round.addRiichi(2);
-		round.addRiichi(3);
+		round.setRiichis([1, 2, 3]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -202,9 +199,7 @@ describe("should calculate points correctly", () => {
 		round.addRon(3, 1, hand1);
 		const hand2 = {fu: 30, han: 2};
 		round.addRon(2, 1, hand2);
-		round.addRiichi(1);
-		round.addRiichi(2);
-		round.addRiichi(3);
+		round.setRiichis([1, 2, 3]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -245,9 +240,7 @@ describe("should calculate points correctly", () => {
 		round.addRon(1, 3, hand2);
 		const hand1 = {fu: 30, han: 6};
 		round.addRon(2, 3, hand1);
-		round.addRiichi(1);
-		round.addRiichi(2);
-		round.addRiichi(3);
+		round.setRiichis([1, 2, 3]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -382,7 +375,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 0,
 		});
-		round.addRiichi(0);
+		round.setRiichis([0]);
 		round.setTenpais([0, 1, 2, 3]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
@@ -470,9 +463,27 @@ describe("should calculate points correctly", () => {
 		});
 	});
 
-	// it("should handle South 3 going to South 4 with p3 at 30,000", () => {
-
-	// });
+	it("should handle South 3 going to South 4 with p3 at 30,000", () => {
+		const roundS3 = new JapaneseRound({
+			roundWind: Wind.SOUTH,
+			roundNumber: 3,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		roundS3.setRiichis([0]);
+		const hand4000 = {fu: 30, han: 3};
+		roundS3.addTsumo(3, hand4000);
+		const endingResult = roundS3.concludeGame();
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-2000, -1000, -2000, 5000]);
+		const roundS4 = generateNextRound(endingResult);
+		expect(roundS4).deep.equal({
+			roundWind: Wind.SOUTH,
+			roundNumber: 4,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		expect(isGameEnd(roundS4, [endingResult])).deep.equals(false);
+	});
 	// it("should handle South 4 hanchan end with p0 win at 30,000", () => {
 
 	// });
@@ -489,6 +500,9 @@ describe("should calculate points correctly", () => {
 
 	// });
 	// it("should handle South 4 -> West 1 no one at 30,000 with p3 no-ten from 30,000 -> 29,000 and 2 riichi sticks", () => {
+
+	// });
+	// it("should handle hanchan end if next round is North 1", () => {
 
 	// });
 });
