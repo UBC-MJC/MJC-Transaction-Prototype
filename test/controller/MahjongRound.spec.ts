@@ -351,6 +351,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 0,
 		});
+		round.setTenpais([1]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -382,6 +383,7 @@ describe("should calculate points correctly", () => {
 			startingRiichiSticks: 0,
 		});
 		round.addRiichi(0);
+		round.setTenpais([0, 1, 2, 3]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -412,6 +414,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 1,
 		});
+		round.setTenpais([]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
@@ -442,6 +445,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 0,
 		});
+		round.setTenpais([]);
 		const endingResult = round.concludeGame();
 		expect(endingResult).deep.equal({
 			roundWind: Wind.EAST,
