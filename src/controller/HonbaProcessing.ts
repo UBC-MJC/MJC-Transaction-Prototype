@@ -87,8 +87,6 @@ export function addHonba(transaction: Transaction, honbaCount: number) {
 	}
 	switch (newTransaction.actionType) {
 		case ActionType.NAGASHI_MANGAN:
-		case ActionType.TENPAI:
-			break;
 		case ActionType.TSUMO:
 			for (const index of range(NUM_PLAYERS)) {
 				if (newTransaction.scoreDeltas[index] > 0) {
@@ -125,7 +123,14 @@ function getClosestWinner(loserLocalPos: number, winners: Set<number>) {
 	return closestWinnerIndex;
 }
 
-export function dealershipRetains(transactions: Transaction[], dealerIndex: number) {
+export function dealershipRetains(transactions: Transaction[], tenpais: null | number[], dealerIndex: number) {
+	if (tenpais !== null) {
+		return tenpais.includes(dealerIndex);
+	}
+	if (transactions.length === 0) {
+		// In-game ryuukyoku
+		return true;
+	}
 	for (const transaction of transactions) {
 		if (
 			[ActionType.RON, ActionType.TSUMO, ActionType.SELF_DRAW_PAO, ActionType.DEAL_IN_PAO].includes(
@@ -135,14 +140,26 @@ export function dealershipRetains(transactions: Transaction[], dealerIndex: numb
 		) {
 			return true;
 		}
-		if (transaction.actionType === ActionType.NAGASHI_MANGAN) {
-			return true;
-		}
 	}
 	return false;
 }
 
-export function getNewHonbaCount(dealerIndex: number, transactions: Transaction[], honba: number) {
+export function getNewHonbaCount(
+	dealerIndex: number,
+	transactions: Transaction[],
+	tenpais: null | number[],
+	honba: number
+) {
+	if (tenpais !== null) {
+		if (tenpais.includes(dealerIndex)) {
+			return 1;
+		}
+		return 0;
+	}
+	if (transactions.length === 0) {
+		// In-game ryuukyoku
+		return honba + 1;
+	}
 	for (const transaction of transactions) {
 		if (
 			[ActionType.RON, ActionType.TSUMO, ActionType.SELF_DRAW_PAO, ActionType.DEAL_IN_PAO].includes(

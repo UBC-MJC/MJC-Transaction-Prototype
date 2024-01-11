@@ -23,6 +23,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 0,
 			riichis: [],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{
@@ -56,6 +57,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 0,
 			riichis: [],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{
@@ -91,6 +93,7 @@ describe("should calculate points correctly", () => {
 			honba: 3,
 			startingRiichiSticks: 0,
 			riichis: [0, 1],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{
@@ -126,6 +129,7 @@ describe("should calculate points correctly", () => {
 			honba: 0,
 			startingRiichiSticks: 0,
 			riichis: [],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{
@@ -169,6 +173,7 @@ describe("should calculate points correctly", () => {
 			honba: 1,
 			startingRiichiSticks: 0,
 			riichis: [1, 2, 3],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{
@@ -212,6 +217,7 @@ describe("should calculate points correctly", () => {
 			honba: 1,
 			startingRiichiSticks: 0,
 			riichis: [1, 2, 3],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{
@@ -255,6 +261,7 @@ describe("should calculate points correctly", () => {
 			honba: 1,
 			startingRiichiSticks: 0,
 			riichis: [1, 2, 3],
+			tenpais: null,
 			endingRiichiSticks: 0,
 			transactions: [
 				{

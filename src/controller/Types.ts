@@ -24,7 +24,6 @@ export const STARTING_POINT = 25000;
 export enum ActionType {
 	RON,
 	TSUMO,
-	TENPAI,
 	DEAL_IN_PAO,
 	SELF_DRAW_PAO,
 	NAGASHI_MANGAN,
@@ -49,6 +48,7 @@ export interface ConcludedRound {
 	 * @param honba The honba of the completed round.
 	 * @param startingRiichiSticks The number of riichi sticks before the round happened.
 	 * @param riichis A list of player indexes who have riichied during the completed round.
+	 * @param tenpais
 	 * @param transactions A list of transactions that happened during the completed round.
 	 */
 	roundWind: Wind;
@@ -56,6 +56,7 @@ export interface ConcludedRound {
 	honba: number;
 	startingRiichiSticks: number;
 	riichis: number[];
+	tenpais: null | number[];
 	endingRiichiSticks: number;
 	transactions: Transaction[];
 }
