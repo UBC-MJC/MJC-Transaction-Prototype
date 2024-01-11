@@ -168,6 +168,7 @@ export class JapaneseRound {
 		}
 		return this.riichiSticks + this.riichis.length;
 	}
+
 	public concludeGame(): ConcludedRound {
 		return {
 			roundWind: this.roundWind,
