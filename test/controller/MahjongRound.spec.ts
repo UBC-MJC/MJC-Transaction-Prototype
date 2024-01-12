@@ -487,14 +487,14 @@ describe("should calculate points correctly", () => {
 		roundS3.addTsumo(3, hand4000);
 		const endingResult = roundS3.concludeRound();
 		expect(generateOverallScoreDelta(endingResult)).deep.equal([-1000, -1000, -2000, 5000]);
-		const roundS4 = generateNextRound(endingResult);
-		expect(roundS4).deep.equal({
+		const roundS3Next = generateNextRound(endingResult);
+		expect(roundS3Next).deep.equal({
 			roundWind: Wind.SOUTH,
 			roundNumber: 4,
 			honba: 0,
 			startingRiichiSticks: 0,
 		});
-		expect(isGameEnd(roundS4, [endingResult])).deep.equals(false);
+		expect(isGameEnd(roundS3Next, [endingResult])).deep.equals(false);
 	});
 	it("should handle South 4 hanchan end with p0 win at 30,000", () => {
 		const roundS4 = new JapaneseRound({
@@ -507,14 +507,14 @@ describe("should calculate points correctly", () => {
 		roundS4.addTsumo(0, hand4000);
 		const endingResultS4 = roundS4.concludeRound();
 		expect(generateOverallScoreDelta(endingResultS4)).deep.equal([5000, -1000, -1000, -2000]);
-		const nextRound = generateNextRound(endingResultS4);
-		expect(nextRound).deep.equal({
+		const roundS4Next = generateNextRound(endingResultS4);
+		expect(roundS4Next).deep.equal({
 			roundWind: Wind.WEST,
 			roundNumber: 1,
 			honba: 0,
 			startingRiichiSticks: 0,
 		});
-		expect(isGameEnd(nextRound, [endingResultS4])).deep.equals(true);
+		expect(isGameEnd(roundS4Next, [endingResultS4])).deep.equals(true);
 	});
 	it("should handle South 4 hanchan not end with p0 win but no one at 30,000", () => {
 		const roundS4 = new JapaneseRound({
@@ -527,14 +527,14 @@ describe("should calculate points correctly", () => {
 		roundS4.addTsumo(0, hand);
 		const endingResultS4 = roundS4.concludeRound();
 		expect(generateOverallScoreDelta(endingResultS4)).deep.equal([1100, -300, -300, -500]);
-		const nextRound = generateNextRound(endingResultS4);
-		expect(nextRound).deep.equal({
+		const roundS4Next = generateNextRound(endingResultS4);
+		expect(roundS4Next).deep.equal({
 			roundWind: Wind.WEST,
 			roundNumber: 1,
 			honba: 0,
 			startingRiichiSticks: 0,
 		});
-		expect(isGameEnd(nextRound, [endingResultS4])).deep.equals(false);
+		expect(isGameEnd(roundS4Next, [endingResultS4])).deep.equals(false);
 	});
 	it("should handle South 4 -> South 4 Honba 1 with p3 win less than 30,000 and 1st", () => {
 		const round = new JapaneseRound({
@@ -591,14 +591,14 @@ describe("should calculate points correctly", () => {
 		roundS4.setTenpais([3]);
 		const endingResultS4 = roundS4.concludeRound();
 		expect(generateOverallScoreDelta(endingResultS4)).deep.equal([-1000, -1000, -1000, 3000]);
-		const nextRound = generateNextRound(endingResultS4);
-		expect(nextRound).deep.equal({
+		const roundS4Next = generateNextRound(endingResultS4);
+		expect(roundS4Next).deep.equal({
 			roundWind: Wind.SOUTH,
 			roundNumber: 4,
 			honba: 1,
 			startingRiichiSticks: 0,
 		});
-		expect(isGameEnd(nextRound, [endingResultS3, endingResultS4])).deep.equals(true);
+		expect(isGameEnd(roundS4Next, [endingResultS3, endingResultS4])).deep.equals(true);
 	});
 	it("should handle South 4 hanchan does not end from p0 score > p3 score > 30,000", () => {
 		const round = new JapaneseRound({
@@ -755,5 +755,328 @@ describe("should calculate points correctly", () => {
 			startingRiichiSticks: 0,
 		});
 		expect(isGameEnd(nextRound, [endingResult])).deep.equals(true);
+	});
+	// nagashi mangan tests
+	it("should handle non-dealer nagashi mangan", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(2);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, 8000, -2000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -2000, 8000, -2000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should handle dealer nagashi mangan", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(0);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [12000, -4000, -4000, -4000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([12000, -4000, -4000, -4000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should handle non-dealer nagashi mangan and dealer tenpai", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(2);
+		round.setTenpais([0]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [0],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, 8000, -2000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -2000, 8000, -2000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should handle non-dealer nagashi mangan with riichi sticks from previous rounds", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 1,
+		});
+		round.addNagashiMangan(3);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 1,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 1,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, -2000, 8000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -2000, -2000, 8000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 1,
+		});
+	});
+	it("should handle non-dealer nagashi mangan and p1 p2 riichi during round", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.setRiichis([1, 2]);
+		round.addNagashiMangan(3);
+		round.setTenpais([1, 2]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [1, 2],
+			tenpais: [1, 2],
+			endingRiichiSticks: 2,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, -2000, 8000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -3000, -3000, 8000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 2,
+		});
+	});
+	it("should handle three nagashi mangan", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(1);
+		round.addNagashiMangan(2);
+		round.addNagashiMangan(3);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, 8000, -2000, -2000],
+				},
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, 8000, -2000],
+				},
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, -2000, 8000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-12000, 4000, 4000, 4000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	// pao
+	it("should consider pao deal in", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+		const handPao = {fu: 40, han: 13};
+		round.addPaoDealIn(3, 1, 0, handPao);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: null,
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.DEAL_IN_PAO,
+					hand: handPao,
+					paoTarget: 0,
+					scoreDeltas: [-24000, -24300, 0, 48300],
+				},
+			],
+		});
+	});
+	it("should consider pao tsumo to one of two yakuman", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+		const handPao = {fu: 40, han: 13};
+		const hand = {fu: 30, han: 13};
+		round.addPaoTsumo(3, 0, handPao);
+		round.addTsumo(3, hand);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: null,
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.SELF_DRAW_PAO,
+					hand: handPao,
+					paoTarget: 0,
+					scoreDeltas: [-48000, 0, 0, 48000],
+				},
+				{
+					actionType: ActionType.TSUMO,
+					hand: hand,
+					scoreDeltas: [-16100, -16100, -16100, 48300],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-64100, -16100, -16100, 96300]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 2,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should consider pao deal in to one of two yakuman", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+		const handPao = {fu: 40, han: 13};
+		round.addPaoDealIn(3, 1, 0, handPao);
+		const hand = {fu: 30, han: 13};
+		round.addRon(3, 1, hand);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: null,
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.DEAL_IN_PAO,
+					hand: handPao,
+					paoTarget: 0,
+					scoreDeltas: [-24000, -24000, 0, 48000],
+				},
+				{
+					actionType: ActionType.RON,
+					hand: hand,
+					scoreDeltas: [0, -48300, 0, 48300],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-24000, -72300, 0, 96300]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 2,
+			startingRiichiSticks: 0,
+		});
 	});
 });

@@ -122,7 +122,7 @@ export class JapaneseRound {
 		scoreDeltas[paoPersonIndex] = -calculateHandValue(multiplier / 2, hand);
 		scoreDeltas[winnerIndex] = calculateHandValue(multiplier, hand);
 		this.transactions.push({
-			actionType: ActionType.NAGASHI_MANGAN,
+			actionType: ActionType.DEAL_IN_PAO,
 			hand: hand,
 			paoTarget: paoPersonIndex,
 			scoreDeltas: scoreDeltas,
@@ -136,7 +136,7 @@ export class JapaneseRound {
 		scoreDeltas[paoPersonIndex] = -value;
 		scoreDeltas[winnerIndex] = value;
 		this.transactions.push({
-			actionType: ActionType.NAGASHI_MANGAN,
+			actionType: ActionType.SELF_DRAW_PAO,
 			hand: hand,
 			paoTarget: paoPersonIndex,
 			scoreDeltas: scoreDeltas,
