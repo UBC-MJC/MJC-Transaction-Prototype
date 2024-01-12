@@ -756,4 +756,214 @@ describe("should calculate points correctly", () => {
 		});
 		expect(isGameEnd(nextRound, [endingResult])).deep.equals(true);
 	});
+	// nagashi mangan tests
+	it("should handle non-dealer nagashi mangan", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(2);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, 8000, -2000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -2000, 8000, -2000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should handle dealer nagashi mangan", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(0);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [12000, -4000, -4000, -4000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([12000, -4000, -4000, -4000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should handle non-dealer nagashi mangan and dealer tenpai", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(2);
+		round.setTenpais([0]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [0],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, 8000, -2000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -2000, 8000, -2000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
+	it("should handle non-dealer nagashi mangan with riichi sticks from previous rounds", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 1,
+		});
+		round.addNagashiMangan(3);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 1,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 1,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, -2000, 8000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -2000, -2000, 8000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 1,
+		});
+	});
+	it("should handle non-dealer nagashi mangan and p1 p2 riichi during round", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.setRiichis([1, 2]);
+		round.addNagashiMangan(3);
+		round.setTenpais([1, 2]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [1, 2],
+			tenpais: [1, 2],
+			endingRiichiSticks: 2,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, -2000, 8000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-4000, -3000, -3000, 8000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 2,
+		});
+	});
+	it("should handle three nagashi mangan", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+		});
+		round.addNagashiMangan(1);
+		round.addNagashiMangan(2);
+		round.addNagashiMangan(3);
+		round.setTenpais([]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 1,
+			honba: 0,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: [],
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, 8000, -2000, -2000],
+				},
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, 8000, -2000],
+				},
+				{
+					actionType: ActionType.NAGASHI_MANGAN,
+					scoreDeltas: [-4000, -2000, -2000, 8000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-12000, 4000, 4000, 4000]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 2,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+	});
 });
