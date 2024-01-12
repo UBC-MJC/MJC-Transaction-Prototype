@@ -16,7 +16,13 @@ import {
 	Transaction,
 	Wind,
 } from "./Types";
-import {dealershipRetains, findHeadbumpWinner, getNewHonbaCount, transformTransactions} from "./HonbaProcessing";
+import {
+	containingAny,
+	dealershipRetains,
+	findHeadbumpWinner,
+	getNewHonbaCount,
+	transformTransactions
+} from "./HonbaProcessing";
 import {range} from "./Range";
 
 export class JapaneseRound {
@@ -209,15 +215,19 @@ function generateTenpaiScoreDeltas(tenpais: null | number[]) {
 }
 
 export function generateOverallScoreDelta(concludedRound: ConcludedRound) {
-	const riichiDeltas = generateTenpaiScoreDeltas(concludedRound.tenpais);
+	const rawScoreDeltas = addScoreDeltas(reduceScoreDeltas(concludedRound.transactions), getEmptyScoreDelta());
 	for (const id of concludedRound.riichis) {
-		riichiDeltas[id] -= 1000;
+		rawScoreDeltas[id] -= 1000;
 	}
+	if (containingAny(concludedRound.transactions, ActionType.NAGASHI_MANGAN)) {
+		return rawScoreDeltas;
+	}
+	const riichiDeltas = addScoreDeltas(generateTenpaiScoreDeltas(concludedRound.tenpais), rawScoreDeltas);
 	const headbumpWinner = findHeadbumpWinner(concludedRound.transactions);
 	if (concludedRound.endingRiichiSticks === 0) {
 		riichiDeltas[headbumpWinner] += (concludedRound.startingRiichiSticks + concludedRound.riichis.length) * 1000;
 	}
-	return addScoreDeltas(reduceScoreDeltas(concludedRound.transactions), riichiDeltas);
+	return riichiDeltas;
 }
 
 export function generateNextRound(concludedRound: ConcludedRound): NewRound {
@@ -259,7 +269,6 @@ export function isGameEnd(
 		(result, current) => addScoreDeltas(result, generateOverallScoreDelta(current)),
 		startingScore
 	);
-	console.log(totalScore);
 	let exceedsHanten = false;
 	for (const score of totalScore) {
 		if (score < 0) {

@@ -1,7 +1,7 @@
 import {ActionType, getEmptyScoreDelta, NUM_PLAYERS, Transaction} from "./Types";
 import {range} from "./Range";
 
-function containingAny(transactions: Transaction[], actionType: ActionType): Transaction | null {
+export function containingAny(transactions: Transaction[], actionType: ActionType): Transaction | null {
 	for (const transaction of transactions) {
 		if (transaction.actionType === actionType) {
 			return transaction;
@@ -54,6 +54,11 @@ function determineHonbaTransaction(transactions: Transaction[]) {
 	}
 	const headbumpWinner = findHeadbumpWinner(transactions);
 	for (const transaction of transactions) {
+		if (transaction.scoreDeltas[headbumpWinner] > 0 && transaction.actionType !== ActionType.DEAL_IN_PAO) {
+			return transaction;
+		}
+	}
+	for (const transaction of transactions) {
 		if (transaction.scoreDeltas[headbumpWinner] > 0) {
 			return transaction;
 		}
@@ -82,7 +87,7 @@ export function addHonba(transaction: Transaction, honbaCount: number) {
 	if (transaction.hand) {
 		newTransaction.hand = transaction.hand;
 	}
-	if (transaction.paoTarget) {
+	if (transaction.paoTarget !== undefined) {
 		newTransaction.paoTarget = transaction.paoTarget;
 	}
 	for (const index of range(NUM_PLAYERS)) {
