@@ -11,6 +11,9 @@ function containingAny(transactions: Transaction[], actionType: ActionType): Tra
 }
 
 export function transformTransactions(transactions: Transaction[], honba: number) {
+	if (transactions.length === 0) {
+		return [];
+	}
 	const transaction: Transaction = determineHonbaTransaction(transactions);
 	const newTransaction: Transaction = addHonba(transaction, honba);
 	for (const index of range(NUM_PLAYERS)) {
@@ -128,16 +131,11 @@ export function dealershipRetains(transactions: Transaction[], tenpais: null | n
 		return tenpais.includes(dealerIndex);
 	}
 	if (transactions.length === 0) {
-		// In-game ryuukyoku
+		// In-round ryuukyoku
 		return true;
 	}
 	for (const transaction of transactions) {
-		if (
-			[ActionType.RON, ActionType.TSUMO, ActionType.SELF_DRAW_PAO, ActionType.DEAL_IN_PAO].includes(
-				transaction.actionType
-			) &&
-			transaction.scoreDeltas[dealerIndex] > 0
-		) {
+		if (transaction.actionType !== ActionType.NAGASHI_MANGAN && transaction.scoreDeltas[dealerIndex] > 0) {
 			return true;
 		}
 	}
@@ -151,22 +149,14 @@ export function getNewHonbaCount(
 	honba: number
 ) {
 	if (tenpais !== null) {
-		if (tenpais.includes(dealerIndex)) {
-			return 1;
-		}
-		return 0;
+		return honba + 1;
 	}
 	if (transactions.length === 0) {
-		// In-game ryuukyoku
+		// In-round ryuukyoku
 		return honba + 1;
 	}
 	for (const transaction of transactions) {
-		if (
-			[ActionType.RON, ActionType.TSUMO, ActionType.SELF_DRAW_PAO, ActionType.DEAL_IN_PAO].includes(
-				transaction.actionType
-			) &&
-			transaction.scoreDeltas[dealerIndex] > 0
-		) {
+		if (transaction.actionType !== ActionType.NAGASHI_MANGAN && transaction.scoreDeltas[dealerIndex] > 0) {
 			return honba + 1;
 		}
 	}

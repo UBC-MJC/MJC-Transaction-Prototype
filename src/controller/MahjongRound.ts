@@ -12,6 +12,7 @@ import {
 	Hand,
 	NewRound,
 	NUM_PLAYERS,
+	RETURNING_POINT,
 	Transaction,
 	Wind,
 } from "./Types";
@@ -22,7 +23,7 @@ export class JapaneseRound {
 	public readonly roundWind: Wind;
 	public readonly roundNumber: number;
 	public readonly honba: number;
-	public readonly riichiSticks: number;
+	public readonly startingRiichiSticks: number;
 	public riichis: number[];
 	public tenpais: null | number[];
 	public readonly transactions: Transaction[];
@@ -31,10 +32,9 @@ export class JapaneseRound {
 	constructor(newRound: NewRound) {
 		/**
 		 * Represents a Round in a Riichi Game.
-		 * @param wind the wind of the current. Can be East or South.
-		 * @param round the current round. Between 1 and 4.
-		 * @param honba the current honba. Can either be 0 (different win), honba of past round + 1 (dealer tenpai/ron)
-		 * or honba of past round (Reshuffle, Chombo).
+		 * @param wind the wind of the current. Can be East, South, West or North.
+		 * @param round the current round. Between 1 and NUM_PLAYERS.
+		 * @param honba the current honba. Can either be 0 (different win) or honba of past round + 1.
 		 * @param riichiSticks the amount of riichi Sticks that are still on the table.
 		 *
 		 * Invariant: the total number of riichi sticks * 1000 + the total score of each player should add up to 100000
@@ -42,7 +42,7 @@ export class JapaneseRound {
 		this.roundWind = newRound.roundWind;
 		this.roundNumber = newRound.roundNumber;
 		this.honba = newRound.honba;
-		this.riichiSticks = newRound.startingRiichiSticks;
+		this.startingRiichiSticks = newRound.startingRiichiSticks;
 		this.riichis = [];
 		this.tenpais = null;
 		this.transactions = [];
@@ -147,11 +147,6 @@ export class JapaneseRound {
 		this.tenpais = tenpaiIndexes;
 	}
 
-	public addRiichi(riichiPlayerIndex: number) {
-		// deprecated
-		this.riichis.push(riichiPlayerIndex);
-	}
-
 	public setRiichis(riichiPlayerIndexes: number[]) {
 		this.riichis = riichiPlayerIndexes;
 	}
@@ -166,15 +161,15 @@ export class JapaneseRound {
 				return 0;
 			}
 		}
-		return this.riichiSticks + this.riichis.length;
+		return this.startingRiichiSticks + this.riichis.length;
 	}
 
-	public concludeGame(): ConcludedRound {
+	public concludeRound(): ConcludedRound {
 		return {
 			roundWind: this.roundWind,
 			roundNumber: this.roundNumber,
 			honba: this.honba,
-			startingRiichiSticks: this.riichiSticks,
+			startingRiichiSticks: this.startingRiichiSticks,
 			riichis: this.riichis,
 			tenpais: this.tenpais,
 			endingRiichiSticks: this.getFinalRiichiSticks(),
@@ -251,29 +246,40 @@ export function generateNextRound(concludedRound: ConcludedRound): NewRound {
 	};
 }
 
-export function isGameEnd(newRound: NewRound, concludedRounds: ConcludedRound[]): boolean { // buggy
+export function isGameEnd(
+	newRound: NewRound,
+	concludedRounds: ConcludedRound[],
+	startingScore = getStartingScore()
+): boolean {
 	if (newRound.roundWind === Wind.NORTH) {
 		// ends at north regardless of what happens
 		return true;
 	}
 	const totalScore = concludedRounds.reduce<number[]>(
 		(result, current) => addScoreDeltas(result, generateOverallScoreDelta(current)),
-		getStartingScore()
+		startingScore
 	);
+	console.log(totalScore);
 	let exceedsHanten = false;
 	for (const score of totalScore) {
 		if (score < 0) {
 			return true;
 		}
-		if (score >= 30000) {
+		if (score >= RETURNING_POINT) {
 			exceedsHanten = true;
 		}
 	}
 	if (!exceedsHanten) {
 		return false;
 	}
-	if (newRound.roundWind === Wind.EAST || newRound.roundWind === Wind.SOUTH) {
-		return false;
+	// At least one person is more than 30k
+	if (newRound.roundWind === Wind.WEST) {
+		return true; // dealership gone; someone's more than 30k
 	}
-	return true; // west, and one person's score exceeds 30k
+	const lastRound = concludedRounds[concludedRounds.length - 1];
+	if (lastRound.roundWind !== Wind.SOUTH || lastRound.roundNumber !== NUM_PLAYERS) {
+		return false; // not even S4 yet
+	}
+	totalScore[NUM_PLAYERS - 1] -= 1; // for tiebreaking purposes
+	return Math.max(...totalScore) === totalScore[3];
 }
