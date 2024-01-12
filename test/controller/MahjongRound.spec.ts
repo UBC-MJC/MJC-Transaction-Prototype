@@ -967,6 +967,34 @@ describe("should calculate points correctly", () => {
 		});
 	});
 	// pao
+	it("should consider pao deal in", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+		});
+		const handPao = {fu: 40, han: 13};
+		round.addPaoDealIn(3, 1, 0, handPao);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startingRiichiSticks: 0,
+			riichis: [],
+			tenpais: null,
+			endingRiichiSticks: 0,
+			transactions: [
+				{
+					actionType: ActionType.DEAL_IN_PAO,
+					hand: handPao,
+					paoTarget: 0,
+					scoreDeltas: [-24000, -24300, 0, 48300],
+				},
+			],
+		});
+	});
 	it("should consider pao tsumo to one of two yakuman", () => {
 		const round = new JapaneseRound({
 			roundWind: Wind.EAST,
