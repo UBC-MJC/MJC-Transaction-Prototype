@@ -21,7 +21,7 @@ import {
 	dealershipRetains,
 	findHeadbumpWinner,
 	getNewHonbaCount,
-	transformTransactions
+	transformTransactions,
 } from "./HonbaProcessing";
 import {range} from "./Range";
 
@@ -31,7 +31,7 @@ export class JapaneseRound {
 	public readonly honba: number;
 	public readonly startingRiichiSticks: number;
 	public riichis: number[];
-	public tenpais: null | number[];
+	public tenpais: number[];
 	public readonly transactions: Transaction[];
 	private readonly dealerIndex: number;
 
@@ -50,7 +50,7 @@ export class JapaneseRound {
 		this.honba = newRound.honba;
 		this.startingRiichiSticks = newRound.startingRiichiSticks;
 		this.riichis = [];
-		this.tenpais = null;
+		this.tenpais = [];
 		this.transactions = [];
 		this.dealerIndex = this.roundNumber - 1;
 	}
@@ -149,6 +149,13 @@ export class JapaneseRound {
 		});
 	}
 
+	public addInRoundRyuukyoku() {
+		this.transactions.push({
+			actionType: ActionType.INROUND_RYUUKYOKU,
+			scoreDeltas: getEmptyScoreDelta(),
+		});
+	}
+
 	public setTenpais(tenpaiIndexes: number[]) {
 		this.tenpais = tenpaiIndexes;
 	}
@@ -199,9 +206,9 @@ function reduceScoreDeltas(transactions: Transaction[]): number[] {
 	);
 }
 
-function generateTenpaiScoreDeltas(tenpais: null | number[]) {
+function generateTenpaiScoreDeltas(tenpais: number[]) {
 	const scoreDeltas = getEmptyScoreDelta();
-	if (tenpais === null || tenpais.length === 0 || tenpais.length === NUM_PLAYERS) {
+	if (tenpais.length === 0 || tenpais.length === NUM_PLAYERS) {
 		return scoreDeltas;
 	}
 	for (const index of range(NUM_PLAYERS)) {
@@ -232,9 +239,8 @@ export function generateOverallScoreDelta(concludedRound: ConcludedRound) {
 
 export function generateNextRound(concludedRound: ConcludedRound): NewRound {
 	const newHonbaCount = getNewHonbaCount(
-		concludedRound.roundNumber - 1,
 		concludedRound.transactions,
-		concludedRound.tenpais,
+		concludedRound.roundNumber - 1,
 		concludedRound.honba
 	);
 	if (dealershipRetains(concludedRound.transactions, concludedRound.tenpais, concludedRound.roundNumber - 1)) {
@@ -289,6 +295,7 @@ export function isGameEnd(
 	if (lastRound.roundWind !== Wind.SOUTH || lastRound.roundNumber !== NUM_PLAYERS) {
 		return false; // not even S4 yet
 	}
+
 	totalScore[NUM_PLAYERS - 1] -= 1; // for tiebreaking purposes
 	return Math.max(...totalScore) === totalScore[3];
 }

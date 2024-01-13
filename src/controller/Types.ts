@@ -29,6 +29,7 @@ export enum ActionType {
 	DEAL_IN_PAO,
 	SELF_DRAW_PAO,
 	NAGASHI_MANGAN,
+	INROUND_RYUUKYOKU,
 }
 export interface Hand {
 	fu: number;
@@ -59,7 +60,7 @@ export interface ConcludedRound {
 	honba: number;
 	startingRiichiSticks: number;
 	riichis: number[];
-	tenpais: null | number[];
+	tenpais: number[];
 	endingRiichiSticks: number;
 	transactions: Transaction[];
 }
