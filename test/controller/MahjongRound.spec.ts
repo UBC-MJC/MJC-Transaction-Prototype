@@ -1079,4 +1079,104 @@ describe("should calculate points correctly", () => {
 			startRiichiStickCount: 0,
 		});
 	});
+	it("should consider pao p0 -> p1, pao p1 -> p2, p3 deal in double ron to p1 p2", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startRiichiStickCount: 0,
+		});
+		const handPaoP0 = {fu: 30, han: 13};
+		round.addPaoDealIn(1, 3, 0, handPaoP0);
+		const handPaoP1 = {fu: 40, han: 13};
+		round.addPaoDealIn(2, 3, 1, handPaoP1);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startRiichiStickCount: 0,
+			riichis: [],
+			tenpais: [],
+			endRiichiStickCount: 0,
+			transactions: [
+				{
+					transactionType: TransactionType.DEAL_IN_PAO,
+					hand: handPaoP0,
+					paoTarget: 0,
+					scoreDeltas: [-16000, 32300, 0, -16300],
+				},
+				{
+					transactionType: TransactionType.DEAL_IN_PAO,
+					hand: handPaoP1,
+					paoTarget: 1,
+					scoreDeltas: [0, -16000, 32000, -16000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-16000, 16300, 32000, -32300]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.SOUTH,
+			roundNumber: 1,
+			honba: 0,
+			startRiichiStickCount: 0,
+		});
+	});
+	it("should consider pao p0 -> p1, pao p1 -> p2, p3 deal in double ron to p1 p2 double yakuman", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startRiichiStickCount: 0,
+		});
+		const handPaoP0 = {fu: 30, han: 13};
+		const handPaoP1 = {fu: 40, han: 13};
+		const hand1 = {fu: 50, han: 13};
+		const hand2 = {fu: 60, han: 13};
+		round.addPaoDealIn(1, 3, 0, handPaoP0);
+		round.addDealIn(1, 3, hand1);
+		round.addPaoDealIn(2, 3, 1, handPaoP1);
+		round.addDealIn(2, 3, hand2);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 1,
+			startRiichiStickCount: 0,
+			riichis: [],
+			tenpais: [],
+			endRiichiStickCount: 0,
+			transactions: [
+				{
+					transactionType: TransactionType.DEAL_IN_PAO,
+					hand: handPaoP0,
+					paoTarget: 0,
+					scoreDeltas: [-16000, 32000, 0, -16000],
+				},
+				{
+					transactionType: TransactionType.DEAL_IN,
+					hand: hand1,
+					scoreDeltas: [0, 32300, 0, -32300],
+				},
+				{
+					transactionType: TransactionType.DEAL_IN_PAO,
+					hand: handPaoP1,
+					paoTarget: 1,
+					scoreDeltas: [0, -16000, 32000, -16000],
+				},
+				{
+					transactionType: TransactionType.DEAL_IN,
+					hand: hand2,
+					scoreDeltas: [0, 0, 32000, -32000],
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([-16000, 48300, 64000, -96300]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.SOUTH,
+			roundNumber: 1,
+			honba: 0,
+			startRiichiStickCount: 0,
+		});
+	});
 });
