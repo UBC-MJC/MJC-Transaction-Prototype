@@ -198,6 +198,48 @@ describe("should calculate points correctly", () => {
 			startRiichiStickCount: 0,
 		});
 	});
+	it("should handle double ron with honba and riichi v2", () => {
+		const round = new JapaneseRound({
+			roundWind: Wind.EAST,
+			roundNumber: 3,
+			honba: 1,
+			startRiichiStickCount: 0,
+		});
+		const hand1 = {fu: 30, han: 6};
+		round.addDealIn(3, 2, hand1);
+		const hand2 = {fu: 30, han: 2};
+		round.addDealIn(1, 2, hand2);
+		round.setRiichis([1, 2, 3]);
+		const endingResult = round.concludeRound();
+		expect(endingResult).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 3,
+			honba: 1,
+			startRiichiStickCount: 0,
+			riichis: [1, 2, 3],
+			tenpais: [],
+			endRiichiStickCount: 0,
+			transactions: [
+				{
+					transactionType: TransactionType.DEAL_IN,
+					scoreDeltas: [0, 0, -12300, 12300],
+					hand: hand1,
+				},
+				{
+					transactionType: TransactionType.DEAL_IN,
+					scoreDeltas: [0, 2000, -2000, 0],
+					hand: hand2,
+				},
+			],
+		});
+		expect(generateOverallScoreDelta(endingResult)).deep.equal([0, 1000, -15300, 14300]);
+		expect(generateNextRound(endingResult)).deep.equal({
+			roundWind: Wind.EAST,
+			roundNumber: 4,
+			honba: 0,
+			startRiichiStickCount: 0,
+		});
+	});
 	it("should handle double ron with honba and riichi with a dealer win", () => {
 		const round = new JapaneseRound({
 			roundWind: Wind.EAST,

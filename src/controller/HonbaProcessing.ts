@@ -126,7 +126,7 @@ export function addHonba(transaction: Transaction, honbaCount: number) {
 function getClosestWinner(loserLocalPos: number, winners: Set<number>) {
 	let [closestWinnerIndex] = winners;
 	for (const winnerIndex of winners) {
-		if ((winnerIndex - loserLocalPos) % NUM_PLAYERS < (closestWinnerIndex - loserLocalPos) % NUM_PLAYERS) {
+		if ((winnerIndex - loserLocalPos + NUM_PLAYERS) % NUM_PLAYERS < (closestWinnerIndex - loserLocalPos + NUM_PLAYERS) % NUM_PLAYERS) {
 			closestWinnerIndex = winnerIndex;
 		}
 	}
