@@ -21,13 +21,15 @@ export const getNextWind = (index: number): Wind => {
 export const NUM_PLAYERS = 4;
 export const STARTING_POINT = 25000;
 
-export enum ActionType {
-	RON,
-	TSUMO,
-	TENPAI,
+export const RETURNING_POINT = 30000; // kaeshi, genten
+
+export enum TransactionType {
+	DEAL_IN,
+	SELF_DRAW,
 	DEAL_IN_PAO,
 	SELF_DRAW_PAO,
 	NAGASHI_MANGAN,
+	INROUND_RYUUKYOKU,
 }
 export interface Hand {
 	fu: number;
@@ -35,7 +37,7 @@ export interface Hand {
 }
 
 export interface Transaction {
-	actionType: ActionType;
+	transactionType: TransactionType;
 	hand?: Hand;
 	paoTarget?: number;
 	scoreDeltas: number[];
@@ -47,16 +49,19 @@ export interface ConcludedRound {
 	 * @param roundWind The wind of the completed round.
 	 * @param roundNumber The number of the completed round.
 	 * @param honba The honba of the completed round.
-	 * @param startingRiichiSticks The number of riichi sticks before the round happened.
+	 * @param startRiichiStickCount The number of riichi sticks before the round happened.
+	 * @param endRiichiStickCount The number of riichi sticks after the round concluded.
 	 * @param riichis A list of player indexes who have riichied during the completed round.
+	 * @param tenpais A list of player indexes who were tenpai during the completed round. Set explicitly; otherwise null
 	 * @param transactions A list of transactions that happened during the completed round.
 	 */
 	roundWind: Wind;
 	roundNumber: number;
 	honba: number;
-	startingRiichiSticks: number;
+	startRiichiStickCount: number;
+	endRiichiStickCount: number;
 	riichis: number[];
-	endingRiichiSticks: number;
+	tenpais: number[];
 	transactions: Transaction[];
 }
 
@@ -64,5 +69,5 @@ export interface NewRound {
 	roundWind: Wind;
 	roundNumber: number;
 	honba: number;
-	startingRiichiSticks: number;
+	startRiichiStickCount: number;
 }

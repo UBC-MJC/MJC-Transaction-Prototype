@@ -4,7 +4,7 @@
 
 import {calculateHandValue, MANGAN_BASE_POINT} from "./Points";
 import {
-	ActionType,
+	TransactionType,
 	ConcludedRound,
 	getEmptyScoreDelta,
 	getNextWind,
@@ -12,28 +12,35 @@ import {
 	Hand,
 	NewRound,
 	NUM_PLAYERS,
+	RETURNING_POINT,
 	Transaction,
 	Wind,
 } from "./Types";
-import {dealershipRetains, findHeadbumpWinner, getNewHonbaCount, transformTransactions} from "./HonbaProcessing";
+import {
+	containingAny,
+	dealershipRetains,
+	findHeadbumpWinner,
+	getNewHonbaCount,
+	transformTransactions,
+} from "./HonbaProcessing";
 import {range} from "./Range";
 
 export class JapaneseRound {
 	public readonly roundWind: Wind;
 	public readonly roundNumber: number;
 	public readonly honba: number;
-	public readonly riichiSticks: number;
+	public readonly startRiichiStickCount: number;
 	public riichis: number[];
+	public tenpais: number[];
 	public readonly transactions: Transaction[];
 	private readonly dealerIndex: number;
 
 	constructor(newRound: NewRound) {
 		/**
 		 * Represents a Round in a Riichi Game.
-		 * @param wind the wind of the current. Can be East or South.
-		 * @param round the current round. Between 1 and 4.
-		 * @param honba the current honba. Can either be 0 (different win), honba of past round + 1 (dealer tenpai/ron)
-		 * or honba of past round (Reshuffle, Chombo).
+		 * @param wind the wind of the current. Can be East, South, West or North.
+		 * @param round the current round. Between 1 and NUM_PLAYERS.
+		 * @param honba the current honba. Can either be 0 (different win) or honba of past round + 1.
 		 * @param riichiSticks the amount of riichi Sticks that are still on the table.
 		 *
 		 * Invariant: the total number of riichi sticks * 1000 + the total score of each player should add up to 100000
@@ -41,8 +48,9 @@ export class JapaneseRound {
 		this.roundWind = newRound.roundWind;
 		this.roundNumber = newRound.roundNumber;
 		this.honba = newRound.honba;
-		this.riichiSticks = newRound.startingRiichiSticks;
+		this.startRiichiStickCount = newRound.startRiichiStickCount;
 		this.riichis = [];
+		this.tenpais = [];
 		this.transactions = [];
 		this.dealerIndex = this.roundNumber - 1;
 	}
@@ -54,21 +62,21 @@ export class JapaneseRound {
 		return 4;
 	}
 
-	public getTsumoMultiplier(personIndex: number, isDealer: boolean) {
+	public getSelfDrawMultiplier(personIndex: number, isDealer: boolean) {
 		if (isDealer || personIndex === this.dealerIndex) {
 			return 2;
 		}
 		return 1;
 	}
 
-	public addRon(winnerIndex: number, loserIndex: number, hand: Hand) {
+	public addDealIn(winnerIndex: number, loserIndex: number, hand: Hand) {
 		const scoreDeltas = getEmptyScoreDelta();
 		const multiplier = this.getDealinMultiplier(winnerIndex);
 		const handValue = calculateHandValue(multiplier, hand);
 		scoreDeltas[winnerIndex] = handValue;
 		scoreDeltas[loserIndex] = -handValue;
 		const result: Transaction = {
-			actionType: ActionType.RON,
+			transactionType: TransactionType.DEAL_IN,
 			hand: hand,
 			scoreDeltas: scoreDeltas,
 		};
@@ -76,20 +84,20 @@ export class JapaneseRound {
 		return result;
 	}
 
-	public addTsumo(winnerIndex: number, hand: Hand) {
+	public addSelfDraw(winnerIndex: number, hand: Hand) {
 		const scoreDeltas = getEmptyScoreDelta();
 		const isDealer = winnerIndex === this.dealerIndex;
 		let totalScore = 0;
 		for (let i = 0; i < NUM_PLAYERS; i++) {
 			if (i !== winnerIndex) {
-				const value = calculateHandValue(this.getTsumoMultiplier(i, isDealer), hand);
+				const value = calculateHandValue(this.getSelfDrawMultiplier(i, isDealer), hand);
 				totalScore += value;
 				scoreDeltas[i] = -value;
 			}
 		}
 		scoreDeltas[winnerIndex] = totalScore;
 		const result: Transaction = {
-			actionType: ActionType.TSUMO,
+			transactionType: TransactionType.SELF_DRAW,
 			hand: hand,
 			scoreDeltas: scoreDeltas,
 		};
@@ -102,13 +110,13 @@ export class JapaneseRound {
 		const isDealer = winnerIndex === this.dealerIndex;
 		for (let i = 0; i < NUM_PLAYERS; i++) {
 			if (i !== winnerIndex) {
-				const value = MANGAN_BASE_POINT * this.getTsumoMultiplier(i, isDealer);
+				const value = MANGAN_BASE_POINT * this.getSelfDrawMultiplier(i, isDealer);
 				scoreDeltas[i] = -value;
 				scoreDeltas[winnerIndex] += value;
 			}
 		}
 		this.transactions.push({
-			actionType: ActionType.NAGASHI_MANGAN,
+			transactionType: TransactionType.NAGASHI_MANGAN,
 			scoreDeltas: scoreDeltas,
 		});
 	}
@@ -120,7 +128,7 @@ export class JapaneseRound {
 		scoreDeltas[paoPersonIndex] = -calculateHandValue(multiplier / 2, hand);
 		scoreDeltas[winnerIndex] = calculateHandValue(multiplier, hand);
 		this.transactions.push({
-			actionType: ActionType.NAGASHI_MANGAN,
+			transactionType: TransactionType.DEAL_IN_PAO,
 			hand: hand,
 			paoTarget: paoPersonIndex,
 			scoreDeltas: scoreDeltas,
@@ -134,34 +142,22 @@ export class JapaneseRound {
 		scoreDeltas[paoPersonIndex] = -value;
 		scoreDeltas[winnerIndex] = value;
 		this.transactions.push({
-			actionType: ActionType.NAGASHI_MANGAN,
+			transactionType: TransactionType.SELF_DRAW_PAO,
 			hand: hand,
 			paoTarget: paoPersonIndex,
 			scoreDeltas: scoreDeltas,
 		});
 	}
 
-	public setTenpais(tenpaiIndexes: number[]) {
-		if (tenpaiIndexes.length === 0) {
-			return;
-		}
-		const scoreDeltas = getEmptyScoreDelta();
-		for (const index of range(NUM_PLAYERS)) {
-			if (tenpaiIndexes.includes(index)) {
-				scoreDeltas[index] = 3000 / tenpaiIndexes.length;
-			} else {
-				scoreDeltas[index] = -3000 / (4 - tenpaiIndexes.length);
-			}
-		}
+	public addInRoundRyuukyoku() {
 		this.transactions.push({
-			actionType: ActionType.TENPAI,
-			scoreDeltas: scoreDeltas,
+			transactionType: TransactionType.INROUND_RYUUKYOKU,
+			scoreDeltas: getEmptyScoreDelta(),
 		});
 	}
 
-	public addRiichi(riichiPlayerIndex: number) {
-		// deprecated
-		this.riichis.push(riichiPlayerIndex);
+	public setTenpais(tenpaiIndexes: number[]) {
+		this.tenpais = tenpaiIndexes;
 	}
 
 	public setRiichis(riichiPlayerIndexes: number[]) {
@@ -171,23 +167,25 @@ export class JapaneseRound {
 	private getFinalRiichiSticks() {
 		for (const transaction of this.transactions) {
 			if (
-				[ActionType.RON, ActionType.TSUMO, ActionType.SELF_DRAW_PAO, ActionType.DEAL_IN_PAO].includes(
-					transaction.actionType
+				[TransactionType.DEAL_IN, TransactionType.SELF_DRAW, TransactionType.SELF_DRAW_PAO, TransactionType.DEAL_IN_PAO].includes(
+					transaction.transactionType
 				)
 			) {
 				return 0;
 			}
 		}
-		return this.riichiSticks + this.riichis.length;
+		return this.startRiichiStickCount + this.riichis.length;
 	}
-	public concludeGame(): ConcludedRound {
+
+	public concludeRound(): ConcludedRound {
 		return {
 			roundWind: this.roundWind,
 			roundNumber: this.roundNumber,
 			honba: this.honba,
-			startingRiichiSticks: this.riichiSticks,
+			startRiichiStickCount: this.startRiichiStickCount,
 			riichis: this.riichis,
-			endingRiichiSticks: this.getFinalRiichiSticks(),
+			tenpais: this.tenpais,
+			endRiichiStickCount: this.getFinalRiichiSticks(),
 			transactions: transformTransactions(this.transactions, this.honba),
 		};
 	}
@@ -208,30 +206,49 @@ function reduceScoreDeltas(transactions: Transaction[]): number[] {
 	);
 }
 
-export function generateOverallScoreDelta(concludedGame: ConcludedRound) {
-	const riichiDeltas = getEmptyScoreDelta();
-	for (const id of concludedGame.riichis) {
-		riichiDeltas[id] -= 1000;
+function generateTenpaiScoreDeltas(tenpais: number[]) {
+	const scoreDeltas = getEmptyScoreDelta();
+	if (tenpais.length === 0 || tenpais.length === NUM_PLAYERS) {
+		return scoreDeltas;
 	}
-	const headbumpWinner = findHeadbumpWinner(concludedGame.transactions);
-	if (concludedGame.endingRiichiSticks === 0) {
-		riichiDeltas[headbumpWinner] += (concludedGame.startingRiichiSticks + concludedGame.riichis.length) * 1000;
+	for (const index of range(NUM_PLAYERS)) {
+		if (tenpais.includes(index)) {
+			scoreDeltas[index] = 3000 / tenpais.length;
+		} else {
+			scoreDeltas[index] = -3000 / (4 - tenpais.length);
+		}
 	}
-	return addScoreDeltas(reduceScoreDeltas(concludedGame.transactions), riichiDeltas);
+	return scoreDeltas;
+}
+
+export function generateOverallScoreDelta(concludedRound: ConcludedRound) {
+	const rawScoreDeltas = addScoreDeltas(reduceScoreDeltas(concludedRound.transactions), getEmptyScoreDelta());
+	for (const id of concludedRound.riichis) {
+		rawScoreDeltas[id] -= 1000;
+	}
+	if (containingAny(concludedRound.transactions, TransactionType.NAGASHI_MANGAN)) {
+		return rawScoreDeltas;
+	}
+	const riichiDeltas = addScoreDeltas(generateTenpaiScoreDeltas(concludedRound.tenpais), rawScoreDeltas);
+	const headbumpWinner = findHeadbumpWinner(concludedRound.transactions);
+	if (concludedRound.endRiichiStickCount === 0) {
+		riichiDeltas[headbumpWinner] += (concludedRound.startRiichiStickCount + concludedRound.riichis.length) * 1000;
+	}
+	return riichiDeltas;
 }
 
 export function generateNextRound(concludedRound: ConcludedRound): NewRound {
 	const newHonbaCount = getNewHonbaCount(
-		concludedRound.roundNumber - 1,
 		concludedRound.transactions,
+		concludedRound.roundNumber - 1,
 		concludedRound.honba
 	);
-	if (dealershipRetains(concludedRound.transactions, concludedRound.roundNumber - 1)) {
+	if (dealershipRetains(concludedRound.transactions, concludedRound.tenpais, concludedRound.roundNumber - 1)) {
 		return {
 			honba: newHonbaCount,
 			roundNumber: concludedRound.roundNumber,
 			roundWind: concludedRound.roundWind,
-			startingRiichiSticks: concludedRound.endingRiichiSticks,
+			startRiichiStickCount: concludedRound.endRiichiStickCount,
 		};
 	}
 	return {
@@ -241,33 +258,44 @@ export function generateNextRound(concludedRound: ConcludedRound): NewRound {
 			concludedRound.roundNumber === NUM_PLAYERS
 				? getNextWind(concludedRound.roundWind.valueOf())
 				: concludedRound.roundWind,
-		startingRiichiSticks: concludedRound.endingRiichiSticks,
+		startRiichiStickCount: concludedRound.endRiichiStickCount,
 	};
 }
 
-export function isGameEnd(newRound: NewRound, concludedRounds: ConcludedRound[]): boolean {
+export function isGameEnd(
+	newRound: NewRound,
+	concludedRounds: ConcludedRound[],
+	startingScore = getStartingScore()
+): boolean {
 	if (newRound.roundWind === Wind.NORTH) {
 		// ends at north regardless of what happens
 		return true;
 	}
 	const totalScore = concludedRounds.reduce<number[]>(
 		(result, current) => addScoreDeltas(result, generateOverallScoreDelta(current)),
-		getStartingScore()
+		startingScore
 	);
 	let exceedsHanten = false;
 	for (const score of totalScore) {
 		if (score < 0) {
 			return true;
 		}
-		if (score >= 30000) {
+		if (score >= RETURNING_POINT) {
 			exceedsHanten = true;
 		}
 	}
 	if (!exceedsHanten) {
 		return false;
 	}
-	if (newRound.roundWind === Wind.EAST || newRound.roundWind === Wind.SOUTH) {
-		return false;
+	// At least one person is more than 30k
+	if (newRound.roundWind === Wind.WEST) {
+		return true; // dealership gone; someone's more than 30k
 	}
-	return true; // west, and one person's score exceeds 30k
+	const lastRound = concludedRounds[concludedRounds.length - 1];
+	if (lastRound.roundWind !== Wind.SOUTH || lastRound.roundNumber !== NUM_PLAYERS) {
+		return false; // not even S4 yet
+	}
+
+	totalScore[NUM_PLAYERS - 1] -= 1; // for tiebreaking purposes
+	return Math.max(...totalScore) === totalScore[3];
 }
